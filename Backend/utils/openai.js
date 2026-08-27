@@ -40,13 +40,42 @@ const getOpenAIAPIResponse = async (message) => {
 }
 const getTranscription = async (filePath) => {
     try {
-        const transcription = await client.audio.transcriptions.create({
-            file: fs.createReadStream(filePath),
-            model: "whisper-1",
-        });
+        console.log("Transcription file:", filePath);
+
+        const transcription =
+            await client.audio.transcriptions.create({
+                file: fs.createReadStream(filePath),
+                model: "gpt-4o-mini-transcribe",
+            });
+
+        console.log(
+            "Transcription result:",
+            transcription.text
+        );
+
         return transcription.text;
+
     } catch (err) {
-        console.log("OpenAI transcription error:", err);
+
+        console.error(
+            "OpenAI transcription error:"
+        );
+
+        console.error(
+            "Status:",
+            err.status
+        );
+
+        console.error(
+            "Message:",
+            err.message
+        );
+
+        console.error(
+            "Response:",
+            err.response?.data
+        );
+
         throw err;
     }
 };

@@ -6,180 +6,336 @@ import { apiFetch } from "../utils/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function Sidebar() {
-    const { allThreads, setAllThreads, currThreadId, setNewChat, setPrompt, setReply, setCurrThreadId, setPrevChats } = useContext(MyContext);
-    const { user } = useAuth();
+  const {
+    allThreads,
+    setAllThreads,
+    currThreadId,
+    setNewChat,
+    setPrompt,
+    setReply,
+    setCurrThreadId,
+    setPrevChats,
+  } = useContext(MyContext);
 
-    const [openMenuId, setOpenMenuId] = useState(null);
-    const [renamingId, setRenamingId] = useState(null);
-    const [renameValue, setRenameValue] = useState("");
-    const menuRef = useRef(null);
+  const { user } = useAuth();
 
-    const getAllThreads = async () => {
-        try {
-            const response = await apiFetch("/api/thread");
-            const res = await response.json();
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
-            const filteredData = res
-                .map(thread => ({
-                    threadId: thread.threadId,
-                    title: thread.title,
-                    updatedAt: thread.updatedAt
-                }))
-                .sort((a, b) => {
-                    return new Date(b.updatedAt) - new Date(a.updatedAt);
-                });
+  const menuRef = useRef(null);
 
-            setAllThreads(filteredData);
+  const getAllThreads = async () => {
+    try {
+      const response = await apiFetch("/api/thread");
+      const res = await response.json();
 
-        } catch (err) {
-            console.log(err);
-        }
+      if (!response.ok) {
+        throw new Error(res.error || "Failed to fetch threads");
+      }
+
+      const filteredData = res
+        .map((thread) => ({
+          threadId: thread.threadId,
+          title: thread.title,
+          updatedAt: thread.updatedAt,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt) -
+            new Date(a.updatedAt)
+        );
+
+      setAllThreads(filteredData);
+    } catch (err) {
+      console.error(err);
     }
-    useEffect(() => {
-        getAllThreads();
-    }, [currThreadId])
+  };
 
-    // close the per-thread options menu when clicking elsewhere
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+  useEffect(() => {
+    getAllThreads();
+  }, [currThreadId]);
 
-    const createNewChat = () => {
-        setNewChat(true);
-        setPrompt("");
-        setReply(null);
-        setCurrThreadId(uuidv1());
-        setPrevChats([]);
-    }
-
-    const changeThread = async (newThreadId) => {
-        setCurrThreadId(newThreadId);
-
-        try {
-            const response = await apiFetch(`/api/thread/${newThreadId}`);
-            const res = await response.json();
-            console.log(res);
-            setPrevChats(res);
-            setNewChat(false);
-            setReply(null);
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    const deleteThread = async (threadId) => {
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target)
+      ) {
         setOpenMenuId(null);
-        try {
-            const response = await apiFetch(`/api/thread/${threadId}`, { method: "DELETE" });
-            const res = await response.json();
-            console.log(res);
+      }
+    };
 
-            //updated threads re-render
-            setAllThreads(prev => prev.filter(thread => thread.threadId !== threadId));
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
 
-            if (threadId === currThreadId) {
-                createNewChat();
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, []);
+
+  const createNewChat = () => {
+    setOpenMenuId(null);
+    setRenamingId(null);
+    setPrompt("");
+    setReply(null);
+    setNewChat(true);
+    setCurrThreadId(uuidv1());
+    setPrevChats([]);
+  };
+
+  const changeThread = async (threadId) => {
+    setOpenMenuId(null);
+    setRenamingId(null);
+    setCurrThreadId(threadId);
+
+    try {
+      const response = await apiFetch(
+        `/api/thread/${threadId}`
+      );
+
+      const res = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          res.error || "Failed to load thread"
+        );
+      }
+
+      setPrevChats(res);
+      setNewChat(false);
+      setReply(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteThread = async (threadId) => {
+    setOpenMenuId(null);
+
+    try {
+      const response = await apiFetch(
+        `/api/thread/${threadId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const res = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          res.error || "Failed to delete thread"
+        );
+      }
+
+      setAllThreads((prev) =>
+        prev.filter(
+          (thread) =>
+            thread.threadId !== threadId
+        )
+      );
+
+      if (threadId === currThreadId) {
+        createNewChat();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const startRename = (thread) => {
+    setOpenMenuId(null);
+    setRenamingId(thread.threadId);
+    setRenameValue(thread.title || "");
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
+    setRenameValue("");
+  };
+
+  const submitRename = async (threadId) => {
+    const title = renameValue.trim();
+
+    if (!title) {
+      cancelRename();
+      return;
+    }
+
+    try {
+      const response = await apiFetch(
+        `/api/thread/${threadId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ title }),
+        }
+      );
+
+      const res = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          res.error || "Failed to rename thread"
+        );
+      }
+
+      setAllThreads((prev) =>
+        prev.map((thread) =>
+          thread.threadId === threadId
+            ? { ...thread, title }
+            : thread
+        )
+      );
+
+      cancelRename();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <section className="sidebar">
+      <button
+        className="newChatButton"
+        onClick={createNewChat}
+        type="button"
+      >
+        <img
+          src="/src/assets/blacklogo.png"
+          alt="GPT logo"
+          className="logo"
+        />
+
+        <span>
+          <i className="fa-solid fa-pen-to-square"></i>
+        </span>
+      </button>
+
+      <ul className="history">
+        {allThreads?.map((thread) => (
+          <li
+            key={thread.threadId}
+            className={
+              thread.threadId === currThreadId
+                ? "highlighted"
+                : ""
             }
+            onClick={() => {
+              if (
+                renamingId !== thread.threadId
+              ) {
+                changeThread(
+                  thread.threadId
+                );
+              }
+            }}
+          >
+            {renamingId === thread.threadId ? (
+              <div
+                className="renameContainer"
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+              >
+                <input
+                  className="renameInput"
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) =>
+                    setRenameValue(
+                      e.target.value
+                    )
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitRename(
+                        thread.threadId
+                      );
+                    }
 
-        } catch (err) {
-            console.log(err);
-        }
-    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                  onBlur={() =>
+                    submitRename(
+                      thread.threadId
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <span className="threadTitle">
+                {thread.title || "New Chat"}
+              </span>
+            )}
 
-    const startRename = (thread) => {
-        setOpenMenuId(null);
-        setRenamingId(thread.threadId);
-        setRenameValue(thread.title);
-    }
+            <button
+              type="button"
+              className="threadMenuButton"
+              onClick={(e) => {
+                e.stopPropagation();
 
-    const submitRename = async (threadId) => {
-        const title = renameValue.trim();
-        setRenamingId(null);
-
-        if (!title) return;
-
-        try {
-            const response = await apiFetch(`/api/thread/${threadId}`, {
-                method: "PATCH",
-                body: JSON.stringify({ title })
-            });
-            const res = await response.json();
-            if (!response.ok) throw new Error(res.error);
-
-            setAllThreads(prev => prev.map(t => t.threadId === threadId ? { ...t, title } : t));
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    return (
-        <section className="sidebar">
-            <button onClick={createNewChat}>
-                <img src="/src/assets/blacklogo.png" alt="gpt logo" className="logo"></img>
-                <span><i className="fa-solid fa-pen-to-square"></i></span>
+                setOpenMenuId((prev) =>
+                  prev === thread.threadId
+                    ? null
+                    : thread.threadId
+                );
+              }}
+            >
+              <i className="fa-solid fa-ellipsis-vertical"></i>
             </button>
 
-
-            <ul className="history">
-                {
-                    allThreads?.map((thread, idx) => (
-                        <li key={idx}
-                            onClick={(e) => renamingId !== thread.threadId && changeThread(thread.threadId)}
-                            className={thread.threadId === currThreadId ? "highlighted" : " "}
-                        >
-                            {
-                                renamingId === thread.threadId ? (
-                                    <span className="threadTitle" onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            autoFocus
-                                            value={renameValue}
-                                            onChange={(e) => setRenameValue(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter") submitRename(thread.threadId);
-                                                if (e.key === "Escape") setRenamingId(null);
-                                            }}
-                                            onBlur={() => submitRename(thread.threadId)}
-                                        />
-                                    </span>
-                                ) : (
-                                    <span className="threadTitle">{thread.title}</span>
-                                )
-                            }
-
-                            <i className="fa-solid fa-ellipsis-vertical"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenMenuId(openMenuId === thread.threadId ? null : thread.threadId);
-                                }}
-                            ></i>
-
-                            {
-                                openMenuId === thread.threadId &&
-                                <div className="threadOptions" ref={menuRef} onClick={(e) => e.stopPropagation()}>
-                                    <div className="threadOptionItem" onClick={() => startRename(thread)}>
-                                        <i className="fa-solid fa-pen"></i> Rename
-                                    </div>
-                                    <div className="threadOptionItem danger" onClick={() => deleteThread(thread.threadId)}>
-                                        <i className="fa-solid fa-trash"></i> Delete
-                                    </div>
-                                </div>
-                            }
-                        </li>
-                    ))
+            {openMenuId === thread.threadId && (
+              <div
+                className="threadOptions"
+                ref={menuRef}
+                onClick={(e) =>
+                  e.stopPropagation()
                 }
-            </ul>
+              >
+                <button
+                  type="button"
+                  className="threadOptionItem"
+                  onClick={() =>
+                    startRename(thread)
+                  }
+                >
+                  <i className="fa-solid fa-pen"></i>
+                  <span>Rename</span>
+                </button>
 
-            <div className="sign">
-                {user && <p style={{ marginBottom: "0.3rem" }}>{user.name}</p>}
-            </div>
-        </section>
-    )
+                <button
+                  type="button"
+                  className="threadOptionItem danger"
+                  onClick={() =>
+                    deleteThread(
+                      thread.threadId
+                    )
+                  }
+                >
+                  <i className="fa-solid fa-trash"></i>
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <div className="sign">
+        {user && <p>{user.name}</p>}
+      </div>
+    </section>
+  );
 }
 
 export default Sidebar;

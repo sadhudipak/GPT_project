@@ -1,56 +1,165 @@
 .chats {
-    width: 100%;
-    max-width: 700px;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 2rem;
-    box-sizing: border-box;
+  width: 100%;
+  max-width: 700px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 .chats::-webkit-scrollbar {
-    width: 8px;
+  width: 8px;
 }
 
 .chats::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 .chats::-webkit-scrollbar-thumb {
-    background: #555;
-    border-radius: 10px;
+  background: #555;
+  border-radius: 10px;
 }
 
 .chats::-webkit-scrollbar-thumb:hover {
-    background: #777;
-}   
-
-.userDiv {
-    display: flex;
-    justify-content: flex-end;
-    font-size: 0.9rem;
+  background: #777;
 }
 
+.userDiv {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.9rem;
+}
 
 .gptDiv {
-    text-align: left;
-    font-size: 0.9rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.gptDiv :not(pre) > code {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    opacity: 1;
+    padding: 2px 6px;
+    border-radius: 5px;
 }
 
 .userMessage {
-    background-color: #323232;
-    padding: 10px 20px;
-    border-radius: 14px;
-    margin-left: 15rem;
-    max-width: 500px;
-    width: fit-content;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+
+  padding: 12px 16px;
+  border-radius: 16px;
+
+  max-width: min(70%, 600px);
+  width: fit-content;
+
+  margin-left: auto;
+
+  line-height: 1.8;
 }
 
 .hljs {
-    border-radius: 14px !important;
+  border-radius: 14px !important;
 }
 
 pre {
-    white-space: pre-wrap;
+  white-space: pre-wrap;
 }
 
+.assistantContent {
+  color: var(--text-primary);
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+.assistantContent p,
+.assistantContent span,
+.assistantContent li {
+  color: var(--text-primary);
+}
+
+.assistantContent h1,
+.assistantContent h2,
+.assistantContent h3,
+.assistantContent h4 {
+  color: var(--text-primary);
+}
+.assistantContent a {
+  color: var(--accent);
+
+  text-decoration: underline;
+}
+
+.assistantContent pre {
+  background: #1e1e1e;
+
+  color: #f5f5f5;
+
+  overflow-x: auto;
+
+  padding: 15px;
+
+  margin: 14px 0;
+
+  border-radius: 12px;
+}
+
+.assistantContent pre code {
+  background: transparent;
+
+  color: #f5f5f5;
+}
+.assistantContent code {
+  padding: 2px 6px;
+
+  border-radius: 5px;
+
+  background: var(--bg-tertiary);
+
+  color: var(--text-primary);
+
+  font-size: 12px;
+}
+.chats {
+    color: var(--text-primary);
+}
+
+.gptDiv {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.gptDiv p,
+.gptDiv span,
+.gptDiv li,
+.gptDiv strong,
+.gptDiv em {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.gptDiv h1,
+.gptDiv h2,
+.gptDiv h3,
+.gptDiv h4,
+.gptDiv h5,
+.gptDiv h6 {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.gptDiv blockquote {
+    color: var(--text-secondary);
+    border-left: 3px solid var(--border-color);
+}
+
+.userDiv {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.userMessage {
+    color: var(--text-primary);
+    opacity: 1;
+}

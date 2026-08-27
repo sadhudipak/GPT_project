@@ -9,250 +9,529 @@ import { useTheme } from "../context/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 
 function ChatWindow() {
-    const { prompt, setPrompt, reply, setReply, currThreadId, setPrevChats, setNewChat, selectedModel, setSelectedModel } = useContext(MyContext);
-    const [loading, setLoading] = useState(false);
-    const [isOpen, setIsOpen] = useState(false); // profile dropdown
-    const [isModelOpen, setIsModelOpen] = useState(false); // model dropdown
-    const [models, setModels] = useState([]);
-    const [recording, setRecording] = useState(false);
-    const [transcribing, setTranscribing] = useState(false);
-    const [voiceError, setVoiceError] = useState("");
+  const {
+    prompt,
+    setPrompt,
+    reply,
+    setReply,
+    currThreadId,
+    setPrevChats,
+    setNewChat,
+    selectedModel,
+    setSelectedModel,
+  } = useContext(MyContext);
 
-    const profileRef = useRef(null);
-    const modelRef = useRef(null);
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const [models, setModels] = useState([]);
+  const [recording, setRecording] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [voiceLanguage, setVoiceLanguage] = useState("en-IN");
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const recognitionRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const profileRef = useRef(null);
+  const modelRef = useRef(null);
+  const languageRef = useRef(null);
+  const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
-    const { logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
-    const navigate = useNavigate();
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechSupported = Boolean(SpeechRecognition);
 
-    const getReply = async () => {
-        if (!prompt.trim()) return;
-        setLoading(true);
-        setNewChat(false);
+  const VOICE_LANGUAGES = [
+    {
+      code: "en-IN",
+      name: "English",
+      region: "India",
+      flag: "🇮🇳",
+    },
 
-        const options = {
-            method: "POST",
-            body: JSON.stringify({
-                message: prompt,
-                threadId: currThreadId
-            })
-        };
+    {
+      code: "gu-IN",
+      name: "Gujarati",
+      region: "India",
+      flag: "🇮🇳",
+    },
 
-        try {
-            const response = await apiFetch("/api/chat", options);
-            const res = await response.json();
-            if (!response.ok) throw new Error(res.error || "Failed to get a reply");
-            setReply(res.reply);
-        } catch (err) {
-            console.log(err);
-        }
-        setLoading(false);
+    {
+      code: "hi-IN",
+      name: "Hindi",
+      region: "India",
+      flag: "🇮🇳",
+    },
+
+    {
+      code: "en-US",
+      name: "English",
+      region: "United States",
+      flag: "🇺🇸",
+    },
+
+    {
+      code: "en-GB",
+      name: "English",
+      region: "United Kingdom",
+      flag: "🇬🇧",
+    },
+  ];
+  const selectedVoiceLanguage =
+    VOICE_LANGUAGES.find((language) => language.code === voiceLanguage) ||
+    VOICE_LANGUAGES[0];
+
+  const getReply = async () => {
+    const message = prompt.trim();
+    // Empty message check
+    if (!message) return;
+    // Prevent multiple requests
+    if (loading) return;
+    setLoading(true);
+    setNewChat(false);
+
+    const options = {
+      method: "POST",
+      body: JSON.stringify({
+        message: message,
+        threadId: currThreadId,
+      }),
+    };
+
+    try {
+      const response = await apiFetch("/api/chat", options);
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.error || "Failed to get a reply");
+      }
+      setPrevChats((prevChats) => [
+        ...prevChats,
+        {
+          role: "user",
+          content: message,
+        },
+        {
+          role: "assistant",
+          content: res.reply,
+        },
+      ]);
+      // Set reply for Chat component
+      setReply(res.reply);
+      // Clear input ONLY after
+      // successful response
+      setPrompt("");
+    } catch (err) {
+      console.error("Chat error:", err);
+    } finally {
+      setLoading(false);
     }
+  };
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const res = await apiFetch("/api/options");
+        const data = await res.json();
+        setModels(data.models || []);
+      } catch (err) {
+        console.error("Failed to load options:", err);
+      }
+    };
+    loadOptions();
+  }, []);
 
-    //Append new chat to prevChats
-    useEffect(() => {
-        if(prompt && reply) {
-            setPrevChats(prevChats => (
-                [...prevChats, {
-                    role: "user",
-                    content: prompt
-                },{
-                    role: "assistant",
-                    content: reply
-                }]
-            ));
-        }
-
-        setPrompt("");
-    }, [reply]);
-
-    // fetch model/voice options once
-    useEffect(() => {
-        const loadOptions = async () => {
-            try {
-                const res = await apiFetch("/api/options");
-                const data = await res.json();
-                setModels(data.models || []);
-            } catch (err) {
-                console.log(err);
-            }
-        };
-        loadOptions();
-    }, []);
-
-    // close dropdowns on outside click
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (profileRef.current && !profileRef.current.contains(e.target)) {
-                setIsOpen(false);
-            }
-            if (modelRef.current && !modelRef.current.contains(e.target)) {
-                setIsModelOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const handleProfileClick = () => {
-        setIsOpen(prev => !prev);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // Profile dropdown
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+      // Model dropdown
+      if (modelRef.current && !modelRef.current.contains(e.target)) {
         setIsModelOpen(false);
-    }
+      }
+      // Language dropdown
+      if (languageRef.current && !languageRef.current.contains(e.target)) {
+        setIsLanguageOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-    const handleModelClick = () => {
-        setIsModelOpen(prev => !prev);
-        setIsOpen(false);
-    }
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, []);
 
-    const handleLogout = async () => {
-        setIsOpen(false);
-        await logout();
-        navigate("/login", { replace: true });
-    }
+  const handleProfileClick = () => {
+    setIsOpen((prev) => !prev);
+    setIsModelOpen(false);
+    setIsLanguageOpen(false);
+  };
 
-    // ---- voice input ----
-    const startRecording = async () => {
+  const handleModelClick = () => {
+    setIsModelOpen((prev) => !prev);
+    setIsOpen(false);
+    setIsLanguageOpen(false);
+  };
+  const handleLogout = async () => {
+    setIsOpen(false);
+    try {
+      await logout();
+      navigate("/login", {
+        replace: true,
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+  const stopRecordingTimer = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+  const formatRecordingTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const remainingSeconds = (seconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${remainingSeconds}`;
+  };
+
+  const handleLanguageChange = (languageCode) => {
+    // Stop current recording
+    // before changing language
+    if (recording) {
+      stopRecording();
+    }
+    setVoiceLanguage(languageCode);
+    setVoiceError("");
+    setIsLanguageOpen(false);
+  };
+
+  const startRecording = () => {
+    setVoiceError("");
+    // Browser support check
+    if (!speechSupported) {
+      setVoiceError(
+        "Voice input is not supported in this browser. Please use Google Chrome or Microsoft Edge.",
+      );
+      return;
+    }
+    // Don't start twice
+    if (recording) {
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      // Continuous listening
+      recognition.continuous = true;
+      // Show partial results
+      recognition.interimResults = true;
+      // Selected language
+      recognition.lang = voiceLanguage;
+      recognition.onstart = () => {
+        setRecording(true);
         setVoiceError("");
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            audioChunksRef.current = [];
+        setRecordingTime(0);
+        // Start timer
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingTime((prev) => prev + 1);
+        }, 1000);
+      };
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunksRef.current.push(e.data);
-            };
-
-            mediaRecorder.onstop = async () => {
-                stream.getTracks().forEach(track => track.stop());
-                const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-                await transcribeAudio(audioBlob);
-            };
-
-            mediaRecorder.start();
-            mediaRecorderRef.current = mediaRecorder;
-            setRecording(true);
-        } catch (err) {
-            console.log(err);
-            setVoiceError("Microphone permission denied or unavailable");
+      recognition.onresult = (event) => {
+        let finalTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          }
         }
-    };
-
-    const stopRecording = () => {
-        mediaRecorderRef.current?.stop();
+        // Add final text
+        // to input box
+        if (finalTranscript.trim()) {
+          setPrompt((prev) => {
+            const text = finalTranscript.trim();
+            if (!prev.trim()) {
+              return text;
+            }
+            return `${prev} ${text}`;
+          });
+        }
+      };
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
         setRecording(false);
-    };
-
-    const handleMicClick = () => {
-        if (recording) {
-            stopRecording();
+        stopRecordingTimer();
+        if (event.error === "not-allowed") {
+          setVoiceError(
+            "Microphone permission was denied. Please allow microphone access.",
+          );
+        } else if (event.error === "no-speech") {
+          setVoiceError("No speech was detected. Please try again.");
+        } else if (event.error === "audio-capture") {
+          setVoiceError(
+            "Microphone could not be accessed. Please check your microphone.",
+          );
+        } else if (event.error === "network") {
+          setVoiceError("Speech recognition requires a network connection.");
         } else {
-            startRecording();
+          setVoiceError(`Voice recognition failed: ${event.error}`);
         }
-    };
+      };
 
-    const transcribeAudio = async (audioBlob) => {
-        setTranscribing(true);
-        try {
-            const formData = new FormData();
-            formData.append("audio", audioBlob, "recording.webm");
+      recognition.onend = () => {
+        setRecording(false);
+        stopRecordingTimer();
+        recognitionRef.current = null;
+      };
+      // Save recognition instance
+      recognitionRef.current = recognition;
+      // Start recognition
+      recognition.start();
+    } catch (error) {
+      console.error("Failed to start speech recognition:", error);
+      setRecording(false);
+      stopRecordingTimer();
+      setVoiceError("Unable to start voice recognition. Please try again.");
+    }
+  };
 
-            const res = await apiFetch("/api/voice/voice/transcribe", {
-                method: "POST",
-                body: formData
-            });
-            const data = await res.json();
+  const stopRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error("Stop recognition error:", error);
+      }
+      recognitionRef.current = null;
+    }
+    stopRecordingTimer();
+    setRecording(false);
+  };
 
-            if (!res.ok) throw new Error(data.error || "Transcription failed");
+  const handleMicClick = () => {
+    if (recording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
 
-            // put transcribed text into the input box; user can edit before sending
-            setPrompt(prev => (prev ? `${prev} ${data.text}` : data.text));
-        } catch (err) {
-            console.log(err);
-            setVoiceError("Couldn't transcribe audio, please try again");
-        } finally {
-            setTranscribing(false);
-        }
-    };
+  return (
+    <div className="chatWindow">
+      <div className="navbar">
+        {/* MODEL SELECTOR */}
+        <div
+          className="modelSelector"
+          ref={modelRef}
+          onClick={handleModelClick}
+        >
+          <span>
+            {selectedModel?.name || "GPT"}{" "}
+            <i className="fa-solid fa-chevron-down"></i>
+          </span>
 
-    return (
-        <div className="chatWindow">
-            <div className="navbar">
-                <div className="modelSelector" ref={modelRef} onClick={handleModelClick}>
-                    <span>{selectedModel?.name || "GPT"} <i className="fa-solid fa-chevron-down"></i></span>
-                    {
-                        isModelOpen &&
-                        <div className="dropDown modelDropDown">
-                            {
-                                models.map(model => (
-                                    <div
-                                        key={model.id}
-                                        className={`dropDownItem ${selectedModel?.id === model.id ? "active" : ""}`}
-                                        onClick={() => { setSelectedModel(model); setIsModelOpen(false); }}
-                                    >
-                                        {model.name}
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    }
+          {isModelOpen && (
+            <div className="dropDown modelDropDown">
+              {models.map((model) => (
+                <div
+                  key={model.id}
+                  className={`dropDownItem ${
+                    selectedModel?.id === model.id ? "active" : ""
+                  }`}
+                  onClick={() => {
+                    setSelectedModel(model);
+
+                    setIsModelOpen(false);
+                  }}
+                >
+                  {model.name}
                 </div>
-
-                <div style={{ display: "flex", alignItems: "center" }}>
-                    <button className="themeToggle" onClick={toggleTheme} title="Toggle theme">
-                        <i className={`fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`}></i>
-                    </button>
-
-                    <div className="userIconDiv" ref={profileRef}>
-                        <span className="userIcon" onClick={handleProfileClick}><i className="fa-solid fa-user"></i></span>
-                        {
-                            isOpen &&
-                            <div className="dropDown">
-                                <div className="dropDownItem"><i className="fa-solid fa-gear"></i> Settings</div>
-                                <div className="dropDownItem"><i className="fa-solid fa-cloud-arrow-up"></i> Upgrade plan</div>
-                                <div className="dropDownItem danger" onClick={handleLogout}>
-                                    <i className="fa-solid fa-arrow-right-from-bracket"></i> Log out
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
+              ))}
             </div>
-
-            <Chat></Chat>
-
-             <ScaleLoader color="#fff" loading={loading}>
-            </ScaleLoader>
-
-
-            <div className="chatInput">
-                <div className="inputBox">
-                    <input placeholder={recording ? "Listening..." : transcribing ? "Transcribing..." : "Ask anything"}
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter'? getReply() : ''}
-                        disabled={transcribing}
-                    >
-
-                    </input>
-                    <button
-                        className={`micBtn ${recording ? "recording" : ""}`}
-                        onClick={handleMicClick}
-                        title={recording ? "Stop recording" : "Record voice message"}
-                        disabled={transcribing}
-                    >
-                        <i className={`fa-solid ${recording ? "fa-stop" : "fa-microphone"}`}></i>
-                    </button>
-                    <div id="submit" onClick={getReply}><i className="fa-solid fa-paper-plane"></i></div>
-                </div>
-                {voiceError && <p className="voiceStatus">{voiceError}</p>}
-                <p className="info">
-                    GPT can make mistakes. Check important info. See Cookie Preferences.
-                </p>
-            </div>
+          )}
         </div>
-    )
-}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <button
+            className="themeToggle"
+            onClick={toggleTheme}
+            title="Toggle theme"
+            type="button"
+          >
+            <i
+              className={`fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`}
+            ></i>
+          </button>
 
+          <div className="userIconDiv" ref={profileRef}>
+            <span className="userIcon" onClick={handleProfileClick}>
+              <i className="fa-solid fa-user"></i>
+            </span>
+            {isOpen && (
+              <div className="dropDown">
+                <div className="dropDownItem">
+                  <i className="fa-solid fa-gear"></i> Settings
+                </div>
+
+                <div className="dropDownItem">
+                  <i className="fa-solid fa-cloud-arrow-up"></i> Upgrade plan
+                </div>
+
+                <div className="dropDownItem danger" onClick={handleLogout}>
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i> Log
+                  out
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Chat />
+      
+      <ScaleLoader
+        color={theme === "dark" ? "#ffffff" : "#171717"}
+        loading={loading}
+      />
+      <div className="chatInput">
+        <div className="voiceControls">
+          <div className="languageSelector" ref={languageRef}>
+            <button
+              type="button"
+              className="languageButton"
+              onClick={() => setIsLanguageOpen((prev) => !prev)}
+            >
+              <span className="languageButtonLeft">
+                <i className="fa-solid fa-language"></i>
+                <span>{selectedVoiceLanguage.name}</span>
+                <small>({selectedVoiceLanguage.region})</small>
+              </span>
+              <i
+                className={`fa-solid ${
+                  isLanguageOpen ? "fa-chevron-up" : "fa-chevron-down"
+                }`}
+              ></i>
+            </button>
+            {/* LANGUAGE DROPDOWN */}
+            {isLanguageOpen && (
+              <div className="languageDropdown">
+                <div className="languageDropdownHeader">Voice language</div>
+                {VOICE_LANGUAGES.map((language) => (
+                  <button
+                    type="button"
+                    key={language.code}
+                    className={`languageOption ${
+                      voiceLanguage === language.code ? "selected" : ""
+                    }`}
+                    onClick={() => {
+                      handleLanguageChange(language.code);
+                    }}
+                  >
+                    <span className="languageFlag">{language.flag}</span>
+                    <span className="languageInfo">
+                      <strong>{language.name}</strong>
+                      <small>{language.region}</small>
+                    </span>
+                    {voiceLanguage === language.code && (
+                      <i className="fa-solid fa-check"></i>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {recording && (
+          <div className="recordingStatus">
+            <span className="recordingIndicator">
+              <span></span>
+            </span>
+            <span className="recordingText">
+              Listening in {selectedVoiceLanguage.name}
+            </span>
+            <span className="recordingTimer">
+              {formatRecordingTime(recordingTime)}
+            </span>
+            <button type="button" onClick={stopRecording}>
+              Stop
+            </button>
+          </div>
+        )}
+        <div className="inputBox">
+          <input
+            type="text"
+            placeholder={recording ? "Listening..." : "Ask anything"}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                getReply();
+              }
+            }}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            className={`micBtn ${recording ? "recording" : ""}`}
+            onClick={handleMicClick}
+            disabled={loading}
+            title={
+              recording
+                ? "Stop listening"
+                : `Voice input - ${selectedVoiceLanguage.name}`
+            }
+          >
+            <i
+              className={`fa-solid ${recording ? "fa-stop" : "fa-microphone"}`}
+            ></i>
+          </button>
+          <button
+            type="button"
+            id="submit"
+            onClick={getReply}
+            disabled={loading || !prompt.trim()}
+            title="Send message"
+          >
+            <i className="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        {voiceError && (
+          <div className="voiceStatus">
+            <i className="fa-solid fa-circle-exclamation"></i>
+            <span>{voiceError}</span>
+            <button type="button" onClick={() => setVoiceError("")}>
+              ×
+            </button>
+          </div>
+        )}
+       <p className="info">
+          GPT can make mistakes. Check important info. See Cookie Preferences.
+        </p>
+      </div>
+    </div>
+  );
+}
 export default ChatWindow;

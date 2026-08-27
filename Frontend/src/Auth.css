@@ -1,0 +1,97 @@
+.authPage {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-primary);
+}
+
+.authCard {
+    width: 100%;
+    max-width: 380px;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.authCard h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    text-align: center;
+}
+
+.authSubtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.authForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.authForm label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.authForm input {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    padding: 12px 14px;
+    color: var(--text-primary);
+}
+
+.authForm input:focus {
+    border-color: var(--accent);
+}
+
+.authSubmit {
+    margin-top: 0.4rem;
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    justify-content: center;
+}
+
+.authSubmit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.authError {
+    background-color: rgba(248, 113, 113, 0.12);
+    border: 1px solid #f87171;
+    color: #f87171;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.authSwitch {
+    text-align: center;
+    margin-top: 1.2rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.authSwitch a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.authSwitch a:hover {
+    text-decoration: underline;
+}

@@ -1,9 +1,9 @@
 import "./Sidebar.css";
 import { useContext, useEffect, useState, useRef } from "react";
-import { MyContext } from "./MyContext.jsx";
+import { MyContext } from "../MyContext.jsx";
 import { v1 as uuidv1 } from "uuid";
-import { apiFetch } from "./utils/api.js";
-import { useAuth } from "./context/AuthContext.jsx";
+import { apiFetch } from "../utils/api.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Sidebar() {
     const { allThreads, setAllThreads, currThreadId, setNewChat, setPrompt, setReply, setCurrThreadId, setPrevChats } = useContext(MyContext);
@@ -177,7 +177,6 @@ function Sidebar() {
 
             <div className="sign">
                 {user && <p style={{ marginBottom: "0.3rem" }}>{user.name}</p>}
-                <p>By Dipak &hearts;</p>
             </div>
         </section>
     )

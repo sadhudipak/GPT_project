@@ -1,11 +1,11 @@
 import "./ChatWindow.css";
 import Chat from "./Chat.jsx";
-import { MyContext } from "./MyContext.jsx";
+import { MyContext } from "../MyContext.jsx";
 import { useContext, useState, useEffect, useRef } from "react";
 import { ScaleLoader } from "react-spinners";
-import { apiFetch } from "./utils/api.js";
-import { useAuth } from "./context/AuthContext.jsx";
-import { useTheme } from "./context/ThemeContext.jsx";
+import { apiFetch } from "../utils/api.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 
 function ChatWindow() {
@@ -222,8 +222,9 @@ function ChatWindow() {
 
             <Chat></Chat>
 
-            <ScaleLoader color="var(--accent)" loading={loading}>
+             <ScaleLoader color="#fff" loading={loading}>
             </ScaleLoader>
+
 
             <div className="chatInput">
                 <div className="inputBox">

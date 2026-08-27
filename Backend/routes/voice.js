@@ -3,12 +3,29 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { getTranscription, getSpeechBuffer } from "../utils/openai.js";
+import authMiddleware from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Multer stores the uploaded audio file temporarily in "uploads/"
-// Make sure this folder exists at your project root (mkdir uploads)
-const upload = multer({ dest: "uploads/" });
+const uploadsDir = path.resolve("uploads");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const upload = multer({
+    dest: uploadsDir,
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB cap on voice notes
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("audio/") || file.mimetype === "video/webm") {
+            cb(null, true);
+        } else {
+            cb(new Error("Only audio files are allowed"));
+        }
+    }
+});
+
+router.use(authMiddleware);
 
 // POST /api/voice/transcribe
 // Accepts multipart/form-data with a field named "audio"

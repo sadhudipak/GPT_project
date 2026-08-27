@@ -1,10 +1,10 @@
 import "./Chat.css";
 import React, { useContext, useState, useEffect } from "react";
-import { MyContext } from "./MyContext";
+import { MyContext } from "../MyContext";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
-import { apiFetch } from "./utils/api.js";
+import { apiFetch } from "../utils/api.js";
 
 function SpeakerButton({ text, currentAudioRef }) {
     const [status, setStatus] = useState("idle"); // idle | loading | playing
@@ -30,7 +30,7 @@ function SpeakerButton({ text, currentAudioRef }) {
         setStatus("loading");
 
         try {
-            const res = await apiFetch("/api/voice/speak", {
+            const res = await apiFetch("/api/voice/voice/speak", {
                 method: "POST",
                 body: JSON.stringify({ text })
             });

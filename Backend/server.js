@@ -2,62 +2,72 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import mongoose from "mongoose";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 import chatRoutes from "./routes/chat.js";
 import voiceRoutes from "./routes/voice.js";
 import authRoutes from "./routes/auth.js";
 import optionsRoutes from "./routes/options.js";
 
-const app=express();
-const PORT=8080;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const connectDB = async()=>{
-  try{
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("connection with Database!!");
-  }catch(err){
-    console.log("Faild to connect with DB",err);  
-  }
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log("connection with Database!!");
+    } catch (err) {
+        console.log("Faild to connect with DB", err);
+    }
 }
 
-app.use(express.json());
-app.use(cors());
-app.use(express.urlencoded({extended:true}))
+// Comma-separated list of allowed origins, e.g.
+// CORS_ORIGIN=http://localhost:5173,https://your-app.vercel.app
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+    .split(",")
+    .map(origin => origin.trim());
 
-app.use("/api",chatRoutes);
-app.use("/api/voice", voiceRoutes); 
+app.use(cors({
+    origin: (origin, callback) => {
+        // allow non-browser tools (curl, server-to-server, etc.) with no origin
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    }
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
+
+// More specific routers must be registered before the broad "/api" mount below,
+// otherwise chatRoutes (mounted at "/api") intercepts everything under /api/*
+// - including /api/auth/* and /api/options - since Express matches by prefix.
+app.use("/api/voice", voiceRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/options", optionsRoutes);
 
-app.listen(PORT,()=>{
-  console.log(`server running on ${PORT}`);  
-  connectDB();
+app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
 });
 
-// app.post("/test",async(req,res)=>{
-//   const options={
-//     method:"POST",
-//     headers:{
-//       "Content-Type":"application/json",
-//       "Authorization":`Bearer ${process.env.OPENAI_API_KEY}`
-//     },
-//     body:JSON.stringify({
-//       model:"gpt-5.4-mini",
-//       messages:[{
-//         role:"user",
-//         content:req.body.message,
-//       }]
-//     })
-//   }
-  
-  
-//   try{
-//     const response=await fetch("https://api.openai.com/v1/chat/completions",options);
-//     const data=await response.json();
-//     console.log(data);
-//     res.send(data.choices[0].message.content);
-    
-//   }catch(err){
-//     console.log(err);
-    
-//   }
-// });
+app.use("/api", chatRoutes);
+
+// Optional: serve the built frontend if it's deployed alongside the backend
+// (single-service deploy). If frontend/dist doesn't exist, this is a no-op.
+const frontendDist = path.join(__dirname, "..", "frontend", "dist");
+if (fs.existsSync(frontendDist)) {
+    app.use(express.static(frontendDist));
+    app.get(/^(?!\/api).*/, (req, res) => {
+        res.sendFile(path.join(frontendDist, "index.html"));
+    });
+}
+
+app.listen(PORT, () => {
+    console.log(`server running on ${PORT}`);
+    connectDB();
+});

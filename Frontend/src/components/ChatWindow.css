@@ -142,8 +142,8 @@
 .micBtn {
     position: absolute;
     right: 50px;
-    top: 50%;
-    transform: translateY(-50%);
+    /* top: 50%; */
+    /* transform: translateY(-50%); */
 
     width: 32px;
     height: 32px;
@@ -162,9 +162,9 @@
     color: var(--text-secondary);
 
     cursor: pointer;
-    transition:
+    /* transition:
         background-color 0.2s ease,
-        color 0.2s ease;
+        color 0.2s ease; */
 }
 
 .micBtn:hover:not(:disabled) {

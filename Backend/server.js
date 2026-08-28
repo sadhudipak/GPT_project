@@ -9,7 +9,6 @@ import chatRoutes from "./routes/chat.js";
 import voiceRoutes from "./routes/voice.js";
 import authRoutes from "./routes/auth.js";
 import optionsRoutes from "./routes/options.js";
-import cors from "cors";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 

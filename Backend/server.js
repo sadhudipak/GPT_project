@@ -12,15 +12,11 @@ import optionsRoutes from "./routes/options.js";
 import cors from "cors";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-app.use(
-    cors({
-        origin: process.env.FRONTEND_URL,
-        credentials: true,
-    })
-);
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+
 
 const connectDB = async () => {
     try {
@@ -45,7 +41,8 @@ app.use(cors({
         } else {
             callback(new Error("Not allowed by CORS"));
         }
-    }
+    },
+    credentials: true,
 }));
 
 app.use(express.json());

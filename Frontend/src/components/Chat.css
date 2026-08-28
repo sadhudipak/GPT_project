@@ -6,6 +6,7 @@
   overflow-x: hidden;
   padding: 2rem;
   box-sizing: border-box;
+  color: var(--text-primary);
 }
 
 .chats::-webkit-scrollbar {
@@ -17,149 +18,154 @@
 }
 
 .chats::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #777;
   border-radius: 10px;
 }
 
 .chats::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: #999;
 }
 
 .userDiv {
   display: flex;
   justify-content: flex-end;
+  color: var(--text-primary);
+  opacity: 1;
   font-size: 0.9rem;
 }
 
 .gptDiv {
   text-align: left;
+  color: var(--text-primary);
+  opacity: 1;
   font-size: 0.9rem;
-}
-.gptDiv :not(pre) > code {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    opacity: 1;
-    padding: 2px 6px;
-    border-radius: 5px;
-}
-
-.userMessage {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-
-  padding: 12px 16px;
-  border-radius: 16px;
-
-  max-width: min(70%, 600px);
-  width: fit-content;
-
-  margin-left: auto;
-
-  line-height: 1.8;
-}
-
-.hljs {
-  border-radius: 14px !important;
-}
-
-pre {
-  white-space: pre-wrap;
-}
-
-.assistantContent {
-  color: var(--text-primary);
-
-  font-size: 14px;
-
   line-height: 1.7;
-}
-.assistantContent p,
-.assistantContent span,
-.assistantContent li {
-  color: var(--text-primary);
-}
-
-.assistantContent h1,
-.assistantContent h2,
-.assistantContent h3,
-.assistantContent h4 {
-  color: var(--text-primary);
-}
-.assistantContent a {
-  color: var(--accent);
-
-  text-decoration: underline;
-}
-
-.assistantContent pre {
-  background: #1e1e1e;
-
-  color: #f5f5f5;
-
-  overflow-x: auto;
-
-  padding: 15px;
-
-  margin: 14px 0;
-
-  border-radius: 12px;
-}
-
-.assistantContent pre code {
-  background: transparent;
-
-  color: #f5f5f5;
-}
-.assistantContent code {
-  padding: 2px 6px;
-
-  border-radius: 5px;
-
-  background: var(--bg-tertiary);
-
-  color: var(--text-primary);
-
-  font-size: 12px;
-}
-.chats {
-    color: var(--text-primary);
-}
-
-.gptDiv {
-    color: var(--text-primary);
-    opacity: 1;
 }
 
 .gptDiv p,
-.gptDiv span,
 .gptDiv li,
 .gptDiv strong,
-.gptDiv em {
-    color: var(--text-primary);
-    opacity: 1;
-}
-
+.gptDiv em,
 .gptDiv h1,
 .gptDiv h2,
 .gptDiv h3,
 .gptDiv h4,
 .gptDiv h5,
 .gptDiv h6 {
-    color: var(--text-primary);
-    opacity: 1;
-}
-
-.gptDiv blockquote {
-    color: var(--text-secondary);
-    border-left: 3px solid var(--border-color);
-}
-
-.userDiv {
-    color: var(--text-primary);
-    opacity: 1;
+  color: var(--text-primary);
+  opacity: 1;
 }
 
 .userMessage {
-    color: var(--text-primary);
-    opacity: 1;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: min(70%, 600px);
+  width: fit-content;
+  margin-left: auto;
+  line-height: 1.8;
+  opacity: 1;
+}
+
+.gptDiv a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.gptDiv blockquote {
+  color: var(--text-secondary);
+  border-left: 3px solid var(--border-color);
+  padding-left: 12px;
+  margin-left: 0;
+}
+
+.gptDiv :not(pre) > code {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+
+.gptDiv pre {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 14px 0;
+  padding: 16px;
+
+  background: #0d1117;
+  color: #f8f8f2;
+
+  border-radius: 14px;
+  overflow-x: auto;
+
+  text-align: left;
+
+  white-space: pre;
+}
+
+.gptDiv pre code {
+  display: block;
+
+  background: transparent;
+  color: inherit;
+
+  padding: 0;
+  border-radius: 0;
+
+  font-family: "Fira Code", "Consolas", "Courier New", monospace;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  white-space: pre;
+}
+
+.hljs {
+  background: #0d1117 !important;
+  color: #f8f8f2;
+  border-radius: 14px !important;
+  padding: 16px !important;
+}
+
+.gptDiv pre .hljs {
+  background: #0d1117;
+}
+
+.assistantContent {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.assistantContent p,
+.assistantContent li,
+.assistantContent strong,
+.assistantContent em,
+.assistantContent h1,
+.assistantContent h2,
+.assistantContent h3,
+.assistantContent h4 {
+  color: var(--text-primary);
+}
+
+.assistantContent a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.assistantContent pre {
+  background: #0d1117;
+  color: #f8f8f2;
+  overflow-x: auto;
+  padding: 16px;
+  margin: 14px 0;
+  border-radius: 14px;
+}
+
+.assistantContent pre code {
+  background: transparent;
+  color: #f8f8f2;
+  padding: 0;
 }
